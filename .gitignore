@@ -1,4 +1,4 @@
 *\.dat
 *\.npy
 *\.ipynb_checkpoints
-notebooks/dataset
+data/
