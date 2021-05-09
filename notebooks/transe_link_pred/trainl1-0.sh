@@ -11,4 +11,4 @@ ogbn-arxiv-edges-test.tsv \
 --log_interval 100 \
 --batch_size_eval 16 --regularization_coef 1.00E-07 \
 --gpu 0 \
---test
+--valid --test
