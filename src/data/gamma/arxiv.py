@@ -16,11 +16,14 @@ def remove_rows(tensor, indices):
     return tensor[:, mask]
 
 
-def load_data():
+def load_data() -> Data:
     dataset = PygNodePropPredDataset(name=DATA_NAME, 
                                      root=DATA_FOLDER)
     data = dataset[0]
+    return data
 
+
+def get_val_test_edges(data: Data, remove_from_data=True):
     # Getting test and validation edges
     torch.manual_seed(EDGES_SEED)
     idx = torch.randperm(data.edge_index.size(1))
@@ -31,14 +34,22 @@ def load_data():
     test_edges = data.edge_index[:, test_idx]
 
     # Removing validation and test edges
-    remove_idx = torch.cat([val_idx, test_idx])
-    data.edge_index = remove_rows(data.edge_index, remove_idx)
+    if remove_from_data:
+        remove_idx = torch.cat([val_idx, test_idx])
+        data.edge_index = remove_rows(data.edge_index, remove_idx)
 
-    return data, val_edges, test_edges
+    return data, val_edges, test_edges    
 
 
-def prepare_adjencency(data: Data):
+def prepare_adjencency(data: Data, to_symmetric=True):
     T.ToSparseTensor()(data)
-    data.adj_t = data.adj_t.to_symmetric()
+    if to_symmetric:
+        data.adj_t = data.adj_t.to_symmetric()
 
     return data
+
+
+def get_edge_index_from_adjencency(data: Data):
+    row, col, _ = data.adj_t.coo()
+    edge_index = torch.stack([col, row], dim=0)
+    return edge_index
