@@ -1,7 +1,7 @@
 *\.dat
 *\.npy
 *\.ipynb_checkpoints
-data/
+data/*
 *__pycache__
-models
+models/*
 ckpts
