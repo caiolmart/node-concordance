@@ -3,10 +3,10 @@ import torch.nn.functional as F
 from torch_geometric.nn import SAGEConv
 
 
-class OneLayerSAGE(torch.nn.Module):
+class GraphSAGE(torch.nn.Module):
     def __init__(self, in_channels, out_channels,
                  dropout):
-        super(OneLayerSAGE, self).__init__()
+        super(GraphSAGE, self).__init__()
 
         self.convs = torch.nn.ModuleList()
         self.convs.append(SAGEConv(in_channels, out_channels))
