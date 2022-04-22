@@ -4,12 +4,13 @@ from torch_geometric.nn import SAGEConv
 
 
 class GraphSAGE(torch.nn.Module):
-    def __init__(self, in_channels, out_channels,
-                 dropout):
+    def __init__(self, n_layers, in_channels, out_channels, dropout):
         super(GraphSAGE, self).__init__()
 
         self.convs = torch.nn.ModuleList()
         self.convs.append(SAGEConv(in_channels, out_channels))
+        for _ in range(n_layers - 1):
+            self.convs.append(SAGEConv(out_channels, out_channels))
 
         self.dropout = dropout
 
@@ -27,9 +28,9 @@ class GraphSAGE(torch.nn.Module):
 
 
 class LinkPredictor(torch.nn.Module):
-    def __init__(self, out_channels, bias=True):
+    def __init__(self, bias=True):
         super(LinkPredictor, self).__init__()
-        self.lin = torch.nn.Linear(1, out_channels, bias=bias)
+        self.lin = torch.nn.Linear(1, 1, bias=bias)
 
     def reset_parameters(self):
         self.lin.weight.data.fill_(1)
