@@ -13,7 +13,7 @@ For the installation with GPU enabled a simple `pip install -r requirements.txt`
 won't work.
 
 Follow the instructions on:
-```
-[https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
-[https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
-```
+
+  - [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
+  - [https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
+
