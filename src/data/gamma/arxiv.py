@@ -23,11 +23,12 @@ def load_data() -> Data:
     return data
 
 
-def get_val_test_edges(data: Data, remove_from_data=True):
+def get_val_test_edges(data: Data, remove_from_data=True, device=None):
     # Getting test and validation edges
     torch.manual_seed(EDGES_SEED)
     idx = torch.randperm(data.edge_index.size(1))
-    n_val_edges = n_test_edges = int(data.edge_index.size(1) * TEST_VAL_PROPORTION)
+    n_val_edges = n_test_edges =\
+        int(data.edge_index.size(1) * TEST_VAL_PROPORTION)
     val_idx = idx[:n_val_edges]
     test_idx = idx[n_val_edges:(n_val_edges + n_test_edges)]
     val_edges = data.edge_index[:, val_idx]
@@ -37,6 +38,11 @@ def get_val_test_edges(data: Data, remove_from_data=True):
     if remove_from_data:
         remove_idx = torch.cat([val_idx, test_idx])
         data.edge_index = remove_rows(data.edge_index, remove_idx)
+
+    if device:
+        data = data.to(device)
+        val_edges = val_edges.to(device)
+        test_edges = test_edges.to(device)
 
     return data, val_edges, test_edges    
 
@@ -49,7 +55,7 @@ def prepare_adjencency(data: Data, to_symmetric=True):
     return data
 
 
-def get_edge_index_from_adjencency(data: Data):
+def get_edge_index_from_adjencency(data: Data, device=None):
     row, col, _ = data.adj_t.coo()
-    edge_index = torch.stack([col, row], dim=0)
+    edge_index = torch.stack([col, row], dim=0).to(device)
     return edge_index
