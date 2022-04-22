@@ -10,7 +10,7 @@ The dataset, `ogbn-arxiv` is from the Open Graph Benchmark (OGB). Downloading in
 This project uses Pytorch and Pytorch Geometric.
 
 For the installation with GPU enabled a simple `pip install -r requirements.txt`
-won't work.
+may not work.
 
 Follow the instructions on:
 
