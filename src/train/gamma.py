@@ -13,7 +13,7 @@ DROPOUT = 0.5
 LEARNING_RATIO = 0.005
 MODEL_PATH_PAT = 'models/gamma/graph_sage/{n_layers}layers_epoch{epoch:04d}.pt'
 PREDICTOR_PATH_PAT = 'models/gamma/link_predictor/{n_layers}layers_epoch{epoch:04d}.pt'
-METRICS_PATH = 'data/metrics/gamma_graph_sage_{n_layers}layers.pt'
+METRICS_PATH = 'data/metrics/gamma_graph_sage_{n_layers}layers.csv'
 METRICS_COLS = [
     'run',
     'epoch',
@@ -246,6 +246,23 @@ class GammaGraphSage():
             neg_edges_test,
             adj_t,
             y):
+
+        loss_val, loss_test, auc_train, auc_val, auc_test = self.eval(
+            edges_train,
+            edges_val,
+            edges_test,
+            neg_edges_val,
+            neg_edges_test,
+            adj_t,
+            y)
+        self.save_metrics(
+            0,
+            None,
+            loss_val.item(),
+            loss_test.item(),
+            auc_train,
+            auc_val,
+            auc_test)
 
         for epoch in range(1, 1 + self.epochs):
             loss_train = self.train_epoch(
