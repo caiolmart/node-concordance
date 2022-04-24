@@ -32,7 +32,7 @@ class GammaGraphSage():
             self,
             device,
             num_nodes,
-            eval_steps=5,
+            eval_steps=1,
             n_layers=1,
             epochs=100,
             batch_size=128 * 1024,
