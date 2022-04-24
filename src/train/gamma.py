@@ -11,8 +11,8 @@ from src.models import GraphSAGE, LinkPredictor
 HIDDEN_CHANNELS = 50
 DROPOUT = 0.5
 LEARNING_RATIO = 0.005
-MODEL_PATH_PAT = 'models/gamma/graph_sage/{n_layers}layers_epoch{epoch:04d}.pt'
-PREDICTOR_PATH_PAT = 'models/gamma/link_predictor/{n_layers}layers_epoch{epoch:04d}.pt'
+MODEL_PATH_PAT = 'models/gamma/graph_sage/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+PREDICTOR_PATH_PAT = 'models/gamma/link_predictor/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
 METRICS_PATH = 'data/metrics/gamma_graph_sage_{n_layers}layers.csv'
 METRICS_COLS = [
     'run',
@@ -34,7 +34,7 @@ class GammaGraphSage():
             num_nodes,
             eval_steps=5,
             n_layers=1,
-            epochs=300,
+            epochs=100,
             batch_size=128 * 1024,
             run=0):
         self.n_layers = n_layers
@@ -189,12 +189,14 @@ class GammaGraphSage():
 
     def save_models(self, epoch):
         model_path = self.model_path_pat.format(
+            run=self.run,
             n_layers=self.n_layers,
             epoch=epoch)
         model_folder = model_path.rsplit('/', 1)[0]
         if not os.path.exists(model_folder):
             os.makedirs(model_folder)
         predictor_path = self.predictor_path_pat.format(
+            run=self.run,
             n_layers=self.n_layers,
             epoch=epoch)
         predictor_folder = predictor_path.rsplit('/', 1)[0]
