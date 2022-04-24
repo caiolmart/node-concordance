@@ -2,6 +2,7 @@ import torch
 from ogb.nodeproppred import PygNodePropPredDataset
 import torch_geometric.transforms as T
 from torch_geometric.data.data import Data
+from torch_geometric.utils import negative_sampling
 
 
 EDGES_SEED = 12345
@@ -31,8 +32,19 @@ def get_val_test_edges(data: Data, remove_from_data=True, device=None):
         int(data.edge_index.size(1) * TEST_VAL_PROPORTION)
     val_idx = idx[:n_val_edges]
     test_idx = idx[n_val_edges:(n_val_edges + n_test_edges)]
-    val_edges = data.edge_index[:, val_idx]
-    test_edges = data.edge_index[:, test_idx]
+    edges_val = data.edge_index[:, val_idx]
+    edges_test = data.edge_index[:, test_idx]
+
+    neg_edges_val = negative_sampling(
+        data.edge_index,
+        num_nodes=data.x.size(0),
+        num_neg_samples=edges_val.size(1),
+        method='sparse')
+    neg_edges_test = negative_sampling(
+        data.edge_index,
+        num_nodes=data.x.size(0),
+        num_neg_samples=edges_test.size(1),
+        method='sparse')
 
     # Removing validation and test edges
     if remove_from_data:
@@ -41,10 +53,10 @@ def get_val_test_edges(data: Data, remove_from_data=True, device=None):
 
     if device:
         data = data.to(device)
-        val_edges = val_edges.to(device)
-        test_edges = test_edges.to(device)
+        edges_val = edges_val.to(device)
+        edges_test = edges_test.to(device)
 
-    return data, val_edges, test_edges    
+    return data, edges_val, edges_test, neg_edges_val, neg_edges_test
 
 
 def prepare_adjencency(data: Data, to_symmetric=True):
