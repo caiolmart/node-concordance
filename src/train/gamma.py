@@ -1,3 +1,4 @@
+from sklearn.metrics import roc_auc_score
 import torch
 from torch_geometric.data import DataLoader
 from torch_geometric.utils import negative_sampling
@@ -11,14 +12,14 @@ BATCH_SIZE = 128 * 1024
 LEARNING_RATIO = 0.005
 N_LAYERS = 1
 EPOCHS = 300
-EVAL_STEPS = 5
 RUNS = 10
 
 
 class GammaGraphSage():
 
-    def __init__(self, device, num_nodes):
+    def __init__(self, device, num_nodes, eval_steps=5):
         self.initialize_models_data(device, num_nodes)
+        self.eval_steps = eval_steps
 
     def initialize_models_data(self, device, num_nodes):
 
@@ -97,3 +98,65 @@ class GammaGraphSage():
 
     def is_same_class(self, edges, y):
         return (y[edges[0]] == y[edges[1]]) * 1
+
+    def eval(
+            self,
+            edges_train,
+            edges_val,
+            edges_test,
+            neg_edges_val,
+            neg_edges_test,
+            adj_t,
+            y):
+
+        proba_pos_train = self.predict(edges_train, adj_t)
+        proba_pos_val = self.predict(edges_val, adj_t)
+        proba_pos_test = self.predict(edges_test, adj_t)
+
+        proba_neg_val = self.predict(neg_edges_val, adj_t)
+        proba_neg_test = self.predict(neg_edges_test, adj_t)
+
+        # Loss evaluation
+
+        val_pos_loss = -torch.log(proba_pos_val + 1e-15).mean()
+        val_neg_loss = -torch.log(1 - proba_neg_val + 1e-15).mean()
+
+        test_pos_loss = -torch.log(proba_pos_test + 1e-15).mean()
+        test_neg_loss = -torch.log(1 - proba_neg_test + 1e-15).mean()
+
+        loss_val = val_pos_loss + val_neg_loss
+        loss_test = test_pos_loss + test_neg_loss
+
+        # AUC evaluation
+
+        proba_pos_train = proba_pos_train\
+            .to('cpu')\
+            .detach()\
+            .numpy()
+        proba_pos_val = proba_pos_val\
+            .to('cpu')\
+            .detach()\
+            .numpy()
+        proba_pos_test = proba_pos_test\
+            .to('cpu')\
+            .detach()\
+            .numpy()
+
+        theta_train = self.is_same_class(edges_train, y)\
+            .to('cpu')\
+            .detach()\
+            .numpy()
+        theta_val = self.is_same_class(edges_val, y)\
+            .to('cpu')\
+            .detach()\
+            .numpy()
+        theta_test = self.is_same_class(edges_test, y)\
+            .to('cpu')\
+            .detach()\
+            .numpy()
+
+        auc_train = roc_auc_score(theta_train, proba_pos_train)
+        auc_val = roc_auc_score(theta_val, proba_pos_val)
+        auc_test = roc_auc_score(theta_test, proba_pos_test)
+
+        return loss_val, loss_test, auc_train, auc_val, auc_test
