@@ -1,5 +1,6 @@
 import logging
 import os
+import pandas as pd
 from sklearn.metrics import roc_auc_score
 import torch
 from torch_geometric.loader import DataLoader
@@ -302,3 +303,7 @@ class GammaGraphSage():
                     auc_train,
                     auc_val,
                     auc_test)
+
+    def read_metrics(self):
+        metrics_path = self.model_metrics_path.format(n_layers=self.n_layers)
+        return pd.read_csv(metrics_path)
