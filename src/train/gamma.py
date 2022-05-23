@@ -6,7 +6,7 @@ import torch
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import negative_sampling
 
-from src.models import GraphSAGE, LinkPredictor
+from src.torch_geo_models import GraphSAGE, LinkPredictor
 
 
 HIDDEN_CHANNELS = 50
