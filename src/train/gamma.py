@@ -1,3 +1,4 @@
+from typing import Tuple
 import logging
 import os
 import pandas as pd
@@ -12,8 +13,9 @@ from src.torch_geo_models import GraphSAGE, LinkPredictor
 HIDDEN_CHANNELS = 50
 DROPOUT = 0.5
 LEARNING_RATIO = 0.005
-MODEL_PATH_PAT = 'models/gamma/graph_sage/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
-PREDICTOR_PATH_PAT = 'models/gamma/link_predictor/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+MODEL_PATH_PAT = 'models/gamma_graph_sage/graph_sage/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+PREDICTOR_PATH_PAT = 'models/gamma_graph_sage/link_predictor/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+EMBEDDING_PATH_PAT = 'models/gamma_graph_sage/embedding/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
 METRICS_PATH = 'data/metrics/gamma_graph_sage_{n_layers}layers.csv'
 METRICS_COLS = [
     'run',
@@ -35,7 +37,7 @@ class GammaGraphSage():
             num_nodes,
             eval_steps=1,
             n_layers=1,
-            epochs=100,
+            epochs=50,
             batch_size=128 * 1024,
             run=0):
         self.n_layers = n_layers
@@ -45,6 +47,7 @@ class GammaGraphSage():
         self.batch_size = batch_size
         self.model_path_pat = MODEL_PATH_PAT
         self.predictor_path_pat = PREDICTOR_PATH_PAT
+        self.embedding_path_pat = EMBEDDING_PATH_PAT
         self.model_metrics_path = METRICS_PATH
         self.run = run
 
@@ -189,6 +192,7 @@ class GammaGraphSage():
         return loss_val, loss_test, auc_train, auc_val, auc_test
 
     def save_models(self, epoch):
+
         model_path = self.model_path_pat.format(
             run=self.run,
             n_layers=self.n_layers,
@@ -196,6 +200,7 @@ class GammaGraphSage():
         model_folder = model_path.rsplit('/', 1)[0]
         if not os.path.exists(model_folder):
             os.makedirs(model_folder)
+
         predictor_path = self.predictor_path_pat.format(
             run=self.run,
             n_layers=self.n_layers,
@@ -203,8 +208,18 @@ class GammaGraphSage():
         predictor_folder = predictor_path.rsplit('/', 1)[0]
         if not os.path.exists(predictor_folder):
             os.makedirs(predictor_folder)
-        torch.save(self.model, model_path)
-        torch.save(self.predictor, predictor_path)
+
+        embedding_path = self.embedding_path_pat.format(
+            run=self.run,
+            n_layers=self.n_layers,
+            epoch=epoch)
+        embedding_folder = embedding_path.rsplit('/', 1)[0]
+        if not os.path.exists(embedding_folder):
+            os.makedirs(embedding_folder)
+
+        torch.save(self.model.state_dict(), model_path)
+        torch.save(self.predictor.state_dict(), predictor_path)
+        torch.save(self.embedding.state_dict(), embedding_path)
 
     def save_metrics(
             self,
@@ -304,6 +319,66 @@ class GammaGraphSage():
                     auc_val,
                     auc_test)
 
-    def read_metrics(self):
-        metrics_path = self.model_metrics_path.format(n_layers=self.n_layers)
+    @classmethod
+    def read_metrics(self, n_layers=1):
+        metrics_path = METRICS_PATH.format(n_layers=n_layers)
         return pd.read_csv(metrics_path)
+
+    @classmethod
+    def load_model(
+        self,
+        run,
+        epoch,
+        device,
+        num_nodes,
+        eval_steps=1,
+        n_layers=1,
+        epochs=100,
+        batch_size=128 * 1024
+    ):
+
+        gamma = GammaGraphSage(
+            device,
+            num_nodes,
+            run=run,
+            eval_steps=eval_steps,
+            n_layers=n_layers,
+            epochs=epochs,
+            batch_size=batch_size)
+
+        model_path = gamma.model_path_pat.format(
+            run=gamma.run,
+            n_layers=gamma.n_layers,
+            epoch=epoch)
+
+        model = GraphSAGE(
+            gamma.n_layers,
+            HIDDEN_CHANNELS,
+            HIDDEN_CHANNELS,
+            DROPOUT).to(device)
+        model.load_state_dict(torch.load(model_path))
+        model.eval()
+
+        predictor_path = gamma.predictor_path_pat.format(
+            run=gamma.run,
+            n_layers=gamma.n_layers,
+            epoch=epoch)
+
+        predictor = LinkPredictor().to(device)
+        predictor.load_state_dict(torch.load(predictor_path))
+        predictor.eval()
+
+        embedding_path = gamma.embedding_path_pat.format(
+            run=gamma.run,
+            n_layers=gamma.n_layers,
+            epoch=epoch)
+        embedding = torch.nn.Embedding(
+            num_nodes,
+            HIDDEN_CHANNELS).to(device)
+        embedding.load_state_dict(torch.load(embedding_path))
+
+        gamma.model = model
+        gamma.predictor = predictor
+        gamma.embedding = embedding
+
+        return gamma
