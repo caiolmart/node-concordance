@@ -36,10 +36,10 @@ class GraphSAGE(torch.nn.Module):
         for conv in self.convs:
             conv.reset_parameters()
 
-    def forward(self, x, adj_t, edge_weight=None):
+    def forward(self, graph, x, edge_weight=None):
         for conv in self.convs[:-1]:
-            x = conv(x, adj_t, edge_weight=edge_weight)
+            x = conv(graph, x, edge_weight=edge_weight)
             x = F.relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.convs[-1](x, adj_t, edge_weight=edge_weight)
-        return x
+        x = self.convs[-1](graph, x, edge_weight=edge_weight)
+        return x.log_softmax(dim=-1)
