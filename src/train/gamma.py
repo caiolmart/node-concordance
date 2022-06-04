@@ -376,6 +376,7 @@ class GammaGraphSage():
             num_nodes,
             HIDDEN_CHANNELS).to(device)
         embedding.load_state_dict(torch.load(embedding_path))
+        embedding.eval()
 
         gamma.model = model
         gamma.predictor = predictor
