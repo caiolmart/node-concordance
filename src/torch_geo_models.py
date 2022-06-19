@@ -54,18 +54,25 @@ class GCN(torch.nn.Module):
             in_channels,
             hidden_channels,
             out_channels,
-            dropout):
+            dropout,
+            batch_norm=False):
         super(GCN, self).__init__()
+        self.batch_norm = batch_norm
 
         self.convs = torch.nn.ModuleList()
+        self.bns = torch.nn.ModuleList()
 
         if n_layers == 1:
             self.convs.append(GCNConv(in_channels, out_channels))
+            self.bns.append(torch.nn.BatchNorm1d(out_channels))
         else:
             self.convs.append(GCNConv(in_channels, hidden_channels))
+            self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
             for _ in range(n_layers - 2):
                 self.convs.append(GCNConv(hidden_channels, hidden_channels))
+                self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
             self.convs.append(GCNConv(hidden_channels, out_channels))
+            self.bns.append(torch.nn.BatchNorm1d(out_channels))
 
         self.dropout = dropout
 
@@ -74,8 +81,10 @@ class GCN(torch.nn.Module):
             conv.reset_parameters()
 
     def forward(self, x, adj_t, edge_weight=None):
-        for conv in self.convs[:-1]:
+        for idx, conv in enumerate(self.convs[:-1]):
             x = conv(x, adj_t, edge_weight=edge_weight)
+            if self.batch_norm:
+                x = self.bns[idx](x)
             x = F.relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.convs[-1](x, adj_t)
