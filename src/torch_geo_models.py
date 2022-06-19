@@ -89,3 +89,27 @@ class GCN(torch.nn.Module):
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.convs[-1](x, adj_t)
         return x.log_softmax(dim=-1)
+
+
+class EdgeWeigher(torch.nn.Module):
+    def __init__(
+            self,
+            base_weights,
+            bias=True):
+        super(EdgeWeigher, self).__init__()
+
+        self.base_weights = base_weights
+        self.lin = torch.nn.Linear(1, 1, bias=bias)
+
+    def reset_parameters(self):
+        self.lin.weight.data.fill_(1)
+        self.lin.bias.data.fill_(0)
+
+    def forward(self):
+        edge_weights = self.base_weights.copy()
+        edge_weights_values = edge_weights.storage.value().reshape(-1, 1)
+        edge_weights_values = self.lin(edge_weights_values)
+        edge_weights_values = torch.sigmoid(edge_weights_values).squeeze()
+        edge_weights.set_value_(edge_weights_values, layout='coo')
+
+        return edge_weights
