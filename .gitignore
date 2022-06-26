@@ -6,3 +6,4 @@ data/*
 models/*
 ckpts
 reports/
+logs
