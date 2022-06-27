@@ -44,21 +44,21 @@ class GCNNodeClassifierTrainer():
 
     def __init__(
             self,
+            adj_t,
             device,
             evaluator,
             n_layers=1,
             input_dim=128,
             hidden_channels=128 * 2,
             output_dim=40,
-            edge_weights=None,
             run=0):
         
         self.n_layers = n_layers
         self.device = device
         self.evaluator = evaluator
-        self.edge_weights = edge_weights
+        self.adj_t = adj_t
         self.has_edge_weights = False
-        if edge_weights is not None:
+        if adj_t.has_value():
             self.has_edge_weights = True
         self.input_dim = input_dim
         self.hidden_channels=hidden_channels
@@ -90,14 +90,13 @@ class GCNNodeClassifierTrainer():
     def train_epoch(
             self,
             features,
-            adj_t,
             labels,
             train_mask):
 
         self.model.train()
 
         self.optimizer.zero_grad()
-        out = self.model(features, adj_t, edge_weight=self.edge_weights)[train_mask]
+        out = self.model(features, self.adj_t)[train_mask]
         loss = F.nll_loss(out, labels.squeeze(1)[train_mask])
         loss.backward()
         self.optimizer.step()
@@ -107,7 +106,6 @@ class GCNNodeClassifierTrainer():
     def eval(
             self,
             features,
-            adj_t,
             labels,
             train_mask,
             val_mask,
@@ -115,7 +113,7 @@ class GCNNodeClassifierTrainer():
 
         self.model.eval()
 
-        out = self.model(features, adj_t, edge_weight=self.edge_weights)
+        out = self.model(features, self.adj_t)
         y_pred = out.argmax(dim=-1, keepdim=True)
 
         acc_train = self.evaluator.eval({
@@ -192,7 +190,6 @@ class GCNNodeClassifierTrainer():
     def train(
             self,
             features,
-            adj_t,
             labels,
             train_mask,
             val_mask,
@@ -201,7 +198,6 @@ class GCNNodeClassifierTrainer():
         acc_train, acc_val, acc_test, loss_train, loss_val, loss_test =\
             self.eval(
                 features,
-                adj_t,
                 labels,
                 train_mask,
                 val_mask,
@@ -218,7 +214,6 @@ class GCNNodeClassifierTrainer():
         for epoch in range(1, 1 + self.epochs):
             loss_train = self.train_epoch(
                 features,
-                adj_t,
                 labels,
                 train_mask)
 
@@ -226,7 +221,6 @@ class GCNNodeClassifierTrainer():
                 acc_train, acc_val, acc_test, loss_train, loss_val, loss_test =\
                     self.eval(
                         features,
-                        adj_t,
                         labels,
                         train_mask,
                         val_mask,
