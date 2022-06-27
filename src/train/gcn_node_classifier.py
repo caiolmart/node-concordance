@@ -4,18 +4,22 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
-from src.data.node_classifier.arxiv import get_edge_weights_pyg
 from src.torch_geo_models import GCN
 
 
 DROPOUT = 0.5
 LEARNING_RATIO = 0.001
 N_LAYERS = list(range(1, 5))
-EPOCHS = 5000
+LAYER_EPOCH_MAP = {
+    1: 10000,
+    2: 3000,
+    3: 2000,
+    4: 1000
+}
 LOG_STEPS = 50
 DROPOUT = 0.5
 
-MODEL_PATH_PAT = 'models/node_classifier/gcn/{run:02d}run_{weighed}weights_{n_layers}layers_epoch{epoch:04d}.pt'
+MODEL_PATH_PAT = 'models/node_classifier/gcn/{run:02d}run_{weighed}weights_{n_layers}layers_epoch{epoch:05d}.pt'
 METRICS_PATH = 'data/metrics/gcn_node_classifier.csv'
 METRICS_COLS = [
     'run',
@@ -62,7 +66,7 @@ class GCNNodeClassifierTrainer():
         self.dropout = DROPOUT
         self.initialize_model()
         self.eval_steps = LOG_STEPS
-        self.epochs = EPOCHS
+        self.epochs = LAYER_EPOCH_MAP[self.n_layers]
         self.model_path_pat = MODEL_PATH_PAT
         self.model_metrics_path = METRICS_PATH
         self.run = run
