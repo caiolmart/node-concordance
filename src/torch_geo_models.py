@@ -47,6 +47,39 @@ class LinkPredictor(torch.nn.Module):
         return torch.sigmoid(x)
 
 
+class DotMLPRelu(torch.nn.Module):
+    def __init__(self, n_layers, in_channels, hidden_channels, dropout, bias=True):
+        super(DotMLPRelu, self).__init__()
+
+        self.dropout = dropout
+
+        self.layers = torch.nn.ModuleList()
+        if n_layers == 1:
+            self.layers.append(torch.nn.Linear(in_channels, 1, bias=bias))
+        else:
+            self.layers.append(
+                torch.nn.Linear(in_channels, hidden_channels, bias=bias))
+
+            for _ in range(n_layers - 2):
+                self.layers.append(
+                    torch.nn.Linear(hidden_channels, hidden_channels, bias=bias))
+
+            self.layers.append(torch.nn.Linear(hidden_channels, 1, bias=bias))
+
+    def reset_parameters(self):
+        for layer in self.layers:
+            layer.reset_parameters()
+
+    def forward(self, x_i, x_j):
+        x = torch.mul(x_i, x_j)
+        for layer in self.layers[:-1]:
+            x = layer(x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.layers[-1](x)
+        return torch.sigmoid(x)
+
+
 class GCN(torch.nn.Module):
     def __init__(
             self,
