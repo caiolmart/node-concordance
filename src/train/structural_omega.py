@@ -33,7 +33,7 @@ class StructuralOmegaMLP():
     def __init__(
             self,
             device,
-            eval_steps=1,
+            eval_steps=100,
             n_layers=1,
             epochs=5000,
             batch_size=512 * 1024,
@@ -43,9 +43,7 @@ class StructuralOmegaMLP():
         self.eval_steps = eval_steps
         self.epochs = epochs
         self.batch_size = batch_size
-        self.model_path_pat = MODEL_PATH_PAT
         self.predictor_path_pat = PREDICTOR_PATH_PAT
-        self.embedding_path_pat = EMBEDDING_PATH_PAT
         self.model_metrics_path = METRICS_PATH
         self.run = run
         self.loss = torch.nn.BCELoss(reduction='mean')
@@ -215,6 +213,7 @@ class StructuralOmegaMLP():
                     y)
 
                 logging.info(
+                    f'# Layers: {self.n_layers}, '
                     f'Run: {self.run:04d}, '
                     f'Epoch: {epoch:04d}, '
                     f'Train Loss: {loss_train:.4f}, '
@@ -228,7 +227,7 @@ class StructuralOmegaMLP():
 
                 self.save_metrics(
                     epoch,
-                    loss_train,
+                    loss_train.item(),
                     loss_val.item(),
                     loss_test.item(),
                     auc_train,
@@ -247,7 +246,7 @@ class StructuralOmegaMLP():
         epoch,
         device,
         num_nodes,
-        eval_steps=1,
+        eval_steps=100,
         n_layers=1,
         epochs=5000,
         batch_size=512 * 1024
