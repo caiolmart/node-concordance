@@ -36,7 +36,7 @@ class StructuralOmegaMLP():
             eval_steps=100,
             n_layers=1,
             epochs=5000,
-            batch_size=512 * 1024,
+            batch_size=128 * 1024,
             run=0):
         self.n_layers = n_layers
         self.initialize_models_data(device)
@@ -87,8 +87,13 @@ class StructuralOmegaMLP():
         return total_loss / total_examples
 
     def forward(self, edges, x):
-        probas = self.predictor(x[edges[0]], x[edges[1]])
-        return probas
+        probas = []
+        for batch in DataLoader(edges,
+                                self.batch_size,
+                                shuffle=False):
+            batch_probas = self.predictor(x[batch[0]], x[batch[1]])
+            probas.append(batch_probas)
+        return torch.concat(probas)
 
     def is_same_class(self, edges, y):
         return (y[edges[0]] == y[edges[1]]) * 1
@@ -102,37 +107,25 @@ class StructuralOmegaMLP():
             y):
         self.predictor.eval()
 
-        proba_train = self.forward(edges_train, x)
-        proba_val = self.forward(edges_val, x)
-        proba_test = self.forward(edges_test, x)
-
-        theta_train = self.is_same_class(edges_train, y).to(torch.float32)
-        theta_val = self.is_same_class(edges_val, y).to(torch.float32)
-        theta_test = self.is_same_class(edges_test, y).to(torch.float32)
+        losses = []
+        aucs = []
 
         # Loss evaluation
-        loss_train = self.loss(proba_train, theta_train)
-        loss_val = self.loss(proba_val, theta_val)
-        loss_test = self.loss(proba_test, theta_test)
+        for edges in [edges_train, edges_val, edges_test]:
+            proba = self.forward(edges, x)
+            theta = self.is_same_class(edges, y).to(torch.float32)
 
-        # AUC evaluation
+            loss = self.loss(proba, theta)
+            losses.append(loss.item())
 
-        proba_train = proba_train.to('cpu').detach().numpy()
-        proba_val = proba_val.to('cpu').detach().numpy()
-        proba_test = proba_test.to('cpu').detach().numpy()
+            proba = proba.to('cpu').detach().numpy()
+            theta = theta.to('cpu').detach().numpy()
+            auc = roc_auc_score(theta, proba)
+            aucs.append(auc)
 
-        theta_train = theta_train.to('cpu').detach().numpy()
-        theta_val = theta_val.to('cpu').detach().numpy()
-        theta_test = theta_test.to('cpu').detach().numpy()
-
-        auc_train = roc_auc_score(theta_train, proba_train)
-        auc_val = roc_auc_score(theta_val, proba_val)
-        auc_test = roc_auc_score(theta_test, proba_test)
-
-        return loss_train, loss_val, loss_test, auc_train, auc_val, auc_test
+        return *losses, *aucs
 
     def save_models(self, epoch):
-
 
         predictor_path = self.predictor_path_pat.format(
             run=self.run,
@@ -194,9 +187,9 @@ class StructuralOmegaMLP():
             y)
         self.save_metrics(
             0,
-            loss_train.item(),
-            loss_val.item(),
-            loss_test.item(),
+            loss_train,
+            loss_val,
+            loss_test,
             auc_train,
             auc_val,
             auc_test)
@@ -227,9 +220,9 @@ class StructuralOmegaMLP():
 
                 self.save_metrics(
                     epoch,
-                    loss_train.item(),
-                    loss_val.item(),
-                    loss_test.item(),
+                    loss_train,
+                    loss_val,
+                    loss_test,
                     auc_train,
                     auc_val,
                     auc_test)
@@ -249,7 +242,7 @@ class StructuralOmegaMLP():
         eval_steps=100,
         n_layers=1,
         epochs=5000,
-        batch_size=512 * 1024
+        batch_size=128 * 1024
     ):
 
         omega = cls(
