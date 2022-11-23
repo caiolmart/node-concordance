@@ -19,8 +19,8 @@ LAYER_EPOCH_MAP = {
 LOG_STEPS = 50
 DROPOUT = 0.5
 
-MODEL_PATH_PAT = 'models/node_classifier/gcn/{run:02d}run_{weighed}weights_{n_layers}layers_epoch{epoch:05d}.pt'
-METRICS_PATH = 'data/metrics/gcn_node_classifier.csv'
+MODEL_PATH_PAT = 'models/node_classifier/gcn/{weights_source}/{run:02d}run_{weighed}weights_{n_layers}layers_epoch{epoch:05d}.pt'
+METRICS_PATH = 'data/metrics/{weights_source}/gcn_node_classifier.csv'
 METRICS_COLS = [
     'run',
     'epoch',
@@ -47,6 +47,7 @@ class GCNNodeClassifierTrainer():
             adj_t,
             device,
             evaluator,
+            weights_source,
             n_layers=1,
             input_dim=128,
             hidden_channels=128 * 2,
@@ -60,6 +61,7 @@ class GCNNodeClassifierTrainer():
         self.has_edge_weights = False
         if adj_t.has_value():
             self.has_edge_weights = True
+        self.weights_source = weights_source
         self.input_dim = input_dim
         self.hidden_channels=hidden_channels
         self.output_dim = output_dim
@@ -96,7 +98,7 @@ class GCNNodeClassifierTrainer():
         self.model.train()
 
         self.optimizer.zero_grad()
-        out = self.model(features, self.adj_t)[train_mask]
+        out = self.model(features, self.adj_t)[train_mask].log_softmax(dim=-1)
         loss = F.nll_loss(out, labels.squeeze(1)[train_mask])
         loss.backward()
         self.optimizer.step()
@@ -113,7 +115,7 @@ class GCNNodeClassifierTrainer():
 
         self.model.eval()
 
-        out = self.model(features, self.adj_t)
+        out = self.model(features, self.adj_t).log_softmax(dim=-1)
         y_pred = out.argmax(dim=-1, keepdim=True)
 
         acc_train = self.evaluator.eval({
@@ -146,7 +148,8 @@ class GCNNodeClassifierTrainer():
             run=self.run,
             n_layers=self.n_layers,
             epoch=epoch,
-            weighed=BOOL_STR_MAP[self.has_edge_weights])
+            weighed=BOOL_STR_MAP[self.has_edge_weights],
+            weights_source=self.weights_source)
         model_folder = model_path.rsplit('/', 1)[0]
         if not os.path.exists(model_folder):
             os.makedirs(model_folder)
@@ -161,7 +164,8 @@ class GCNNodeClassifierTrainer():
             loss_train,
             loss_val,
             loss_test):
-        metrics_path = self.model_metrics_path.format(n_layers=self.n_layers)
+        metrics_path = self.model_metrics_path.format(
+            weights_source=self.weights_source)
         metrics_folder = metrics_path.rsplit('/', 1)[0]
         if not os.path.exists(metrics_folder):
             os.makedirs(metrics_folder)
@@ -249,7 +253,8 @@ class GCNNodeClassifierTrainer():
                     loss_val,
                     loss_test)
 
-    @classmethod
-    def read_metrics(self):
-        metrics_path = METRICS_PATH
+    @staticmethod
+    def read_metrics(weights_source):
+        metrics_path = METRICS_PATH.format(
+            weights_source=weights_source)
         return pd.read_csv(metrics_path)
