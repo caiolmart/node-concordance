@@ -27,6 +27,50 @@ class GraphSAGE(torch.nn.Module):
         return x
 
 
+class GCN(torch.nn.Module):
+    def __init__(
+            self,
+            n_layers,
+            in_channels,
+            hidden_channels,
+            out_channels,
+            dropout,
+            batch_norm=False):
+        super(GCN, self).__init__()
+        self.batch_norm = batch_norm
+
+        self.convs = torch.nn.ModuleList()
+        self.bns = torch.nn.ModuleList()
+
+        if n_layers == 1:
+            self.convs.append(GCNConv(in_channels, out_channels))
+            self.bns.append(torch.nn.BatchNorm1d(out_channels))
+        else:
+            self.convs.append(GCNConv(in_channels, hidden_channels))
+            self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+            for _ in range(n_layers - 2):
+                self.convs.append(GCNConv(hidden_channels, hidden_channels))
+                self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+            self.convs.append(GCNConv(hidden_channels, out_channels))
+            self.bns.append(torch.nn.BatchNorm1d(out_channels))
+
+        self.dropout = dropout
+
+    def reset_parameters(self):
+        for conv in self.convs:
+            conv.reset_parameters()
+
+    def forward(self, x, adj_t, edge_weight=None):
+        for idx, conv in enumerate(self.convs[:-1]):
+            x = conv(x, adj_t, edge_weight=edge_weight)
+            if self.batch_norm:
+                x = self.bns[idx](x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.convs[-1](x, adj_t)
+        return x
+
+
 class LinkPredictor(torch.nn.Module):
     def __init__(self, bias=True):
         super(LinkPredictor, self).__init__()
@@ -78,50 +122,6 @@ class DotMLPRelu(torch.nn.Module):
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.layers[-1](x)
         return torch.sigmoid(x)
-
-
-class GCN(torch.nn.Module):
-    def __init__(
-            self,
-            n_layers,
-            in_channels,
-            hidden_channels,
-            out_channels,
-            dropout,
-            batch_norm=False):
-        super(GCN, self).__init__()
-        self.batch_norm = batch_norm
-
-        self.convs = torch.nn.ModuleList()
-        self.bns = torch.nn.ModuleList()
-
-        if n_layers == 1:
-            self.convs.append(GCNConv(in_channels, out_channels))
-            self.bns.append(torch.nn.BatchNorm1d(out_channels))
-        else:
-            self.convs.append(GCNConv(in_channels, hidden_channels))
-            self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-            for _ in range(n_layers - 2):
-                self.convs.append(GCNConv(hidden_channels, hidden_channels))
-                self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-            self.convs.append(GCNConv(hidden_channels, out_channels))
-            self.bns.append(torch.nn.BatchNorm1d(out_channels))
-
-        self.dropout = dropout
-
-    def reset_parameters(self):
-        for conv in self.convs:
-            conv.reset_parameters()
-
-    def forward(self, x, adj_t, edge_weight=None):
-        for idx, conv in enumerate(self.convs[:-1]):
-            x = conv(x, adj_t, edge_weight=edge_weight)
-            if self.batch_norm:
-                x = self.bns[idx](x)
-            x = F.relu(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.convs[-1](x, adj_t)
-        return x.log_softmax(dim=-1)
 
 
 class EdgeWeigher(torch.nn.Module):
