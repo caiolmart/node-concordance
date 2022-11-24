@@ -1,4 +1,3 @@
-from typing import Tuple
 import logging
 import os
 import pandas as pd
