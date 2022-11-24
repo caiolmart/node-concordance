@@ -249,7 +249,11 @@ class StructuralOmegaGCNCosSim:
         )
 
         model = GCN(
-            omega.n_layers_gcn, IN_CHANNELS, HIDDEN_CHANNELS, DROPOUT
+            omega.n_layers_gcn,
+            IN_CHANNELS,
+            HIDDEN_CHANNELS,
+            HIDDEN_CHANNELS,
+            DROPOUT
         ).to(device)
         model.load_state_dict(torch.load(model_path))
         model.eval()
