@@ -542,29 +542,27 @@ class StructuralOmegaGraphSageCosSim():
         run,
         epoch,
         device,
-        num_nodes,
         eval_steps=100,
-        n_layers=1,
+        n_layers_graph_sage=1,
         epochs=5000,
         batch_size=128 * 1024
     ):
 
         omega = cls(
             device,
-            num_nodes,
             run=run,
             eval_steps=eval_steps,
-            n_layers=n_layers,
+            n_layers_graph_sage=n_layers_graph_sage,
             epochs=epochs,
             batch_size=batch_size)
 
         model_path = omega.model_path_pat.format(
             run=omega.run,
-            n_layers=omega.n_layers,
+            n_layers_graph_sage=omega.n_layers_graph_sage,
             epoch=epoch)
 
         model = GraphSAGE(
-            omega.n_layers,
+            omega.n_layers_graph_sage,
             IN_CHANNELS,
             HIDDEN_CHANNELS,
             DROPOUT).to(device)
