@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import SAGEConv, GCNConv
+from torch_geometric.nn import SAGEConv, GCNConv, GATConv
+from torch.nn.parameter import Parameter
 
 
 class GraphSAGE(torch.nn.Module):
@@ -63,6 +64,78 @@ class GCN(torch.nn.Module):
     def forward(self, x, adj_t, edge_weight=None):
         for idx, conv in enumerate(self.convs[:-1]):
             x = conv(x, adj_t, edge_weight=edge_weight)
+            if self.batch_norm:
+                x = self.bns[idx](x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.convs[-1](x, adj_t, edge_weight=edge_weight)
+        return x
+
+
+class GAT(torch.nn.Module):
+    def __init__(
+            self,
+            n_layers,
+            in_channels,
+            hidden_channels,
+            out_channels,
+            dropout,
+            batch_norm=False,
+            feat_drop=0,
+            attn_drop=0,
+            negative_slope=0.2
+        ):
+        super(GAT, self).__init__()
+        self.batch_norm = batch_norm
+
+        self.convs = torch.nn.ModuleList()
+        self.bns = torch.nn.ModuleList()
+
+        if n_layers == 1:
+            self.convs.append(
+                GATConv(
+                    in_channels,
+                    out_channels,
+                    feat_drop=feat_drop,
+                    attn_drop=attn_drop,
+                    negative_slope=negative_slope))
+            self.bns.append(torch.nn.BatchNorm1d(out_channels))
+        else:
+            self.convs.append(
+                GATConv(
+                    in_channels,
+                    hidden_channels,
+                    feat_drop=feat_drop,
+                    attn_drop=attn_drop,
+                    negative_slope=negative_slope))
+            self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+            for _ in range(n_layers - 2):
+                self.convs.append(
+                    GATConv(
+                        hidden_channels,
+                        hidden_channels,
+                        feat_drop=feat_drop,
+                        attn_drop=attn_drop,
+                        negative_slope=negative_slope))
+                self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+            self.convs.append(
+                GATConv(
+                    hidden_channels,
+                    out_channels,
+                    feat_drop=feat_drop,
+                    attn_drop=attn_drop,
+                    negative_slope=negative_slope))
+            self.bns.append(torch.nn.BatchNorm1d(out_channels))
+
+        self.dropout = dropout
+
+    def reset_parameters(self):
+        for conv in self.convs:
+            conv.reset_parameters()
+
+    def forward(self, x, adj_t):
+        for idx, conv in enumerate(self.convs[:-1]):
+            x = conv(x, adj_t)
             if self.batch_norm:
                 x = self.bns[idx](x)
             x = F.relu(x)
