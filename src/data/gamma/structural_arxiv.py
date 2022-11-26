@@ -3,11 +3,8 @@ import torch
 from ogb.nodeproppred import PygNodePropPredDataset
 import torch_geometric.transforms as T
 from torch_geometric.data.data import Data
-from torch_geometric.utils import negative_sampling
 
 
-EDGES_SEED = 12345
-TEST_VAL_PROPORTION = 0.025
 DATA_FOLDER = 'data/gamma/'
 DATA_NAME = 'ogbn-arxiv'
 
