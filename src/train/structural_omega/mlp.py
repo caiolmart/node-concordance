@@ -1,11 +1,9 @@
-from typing import Tuple
 import logging
 import os
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 import torch
 from torch_geometric.loader import DataLoader
-from torch_geometric.utils import negative_sampling
 
 from src.torch_geo_models import DotMLPRelu
 
