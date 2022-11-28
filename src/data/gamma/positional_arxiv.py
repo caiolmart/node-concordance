@@ -67,7 +67,7 @@ def get_train_val_test_edges_auc(
     return data, edges_train_auc, edges_val_auc, edges_test_auc
 
 
-def get_val_test_edges_link_pred(data: Data, remove_from_data=True, device=None):
+def get_val_test_edges_link_pred(data: Data, remove_from_data=True, device=None, get_neg_edges_train=False):
     # Getting test and validation edges
     torch.manual_seed(EDGES_SEED)
     idx = torch.randperm(data.edge_index.size(1))
@@ -90,6 +90,14 @@ def get_val_test_edges_link_pred(data: Data, remove_from_data=True, device=None)
         method="sparse",
     )
 
+    if get_neg_edges_train:
+        neg_edges_train = negative_sampling(
+            data.edge_index,
+            num_nodes=data.x.size(0),
+            num_neg_samples=edges_test.size(1),
+            method="sparse",
+        )
+
     # Removing validation and test edges
     if remove_from_data:
         remove_idx = torch.cat([val_idx, test_idx])
@@ -99,6 +107,9 @@ def get_val_test_edges_link_pred(data: Data, remove_from_data=True, device=None)
         data = data.to(device)
         edges_val = edges_val.to(device)
         edges_test = edges_test.to(device)
+
+    if get_neg_edges_train:
+        return data, edges_val, edges_test, neg_edges_val, neg_edges_test, neg_edges_train
 
     return data, edges_val, edges_test, neg_edges_val, neg_edges_test
 
