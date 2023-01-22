@@ -12,12 +12,12 @@ HIDDEN_CHANNELS = 128
 IN_CHANNELS = 128
 DROPOUT = 0.5
 LEARNING_RATIO = 0.005
-DOTMLP_MODEL_PATH_PAT = 'models/structural_omega_grapn_sage_dotmlp/model_{run}run_{n_layers_graph_sage}gslayers_{n_layers_mlp}mlplayers_epoch{epoch:04d}.pt'
-DOTMLP_PREDICTOR_PATH_PAT = 'models/structural_omega_grapn_sage_dotmlp/link_predictor_{run}run_{n_layers_graph_sage}gslayers_{n_layers_mlp}mlplayers_epoch{epoch:04d}.pt'
-DOTMLP_METRICS_PATH = 'data/metrics/structural_omega_grapn_sage_dotmlp_{n_layers_graph_sage}gslayers_{n_layers_mlp}mlplayers.csv'
-COSSIM_MODEL_PATH_PAT = 'models/structural_omega_grapn_sage_cossim/model_{run}run_{n_layers_graph_sage}gslayers_epoch{epoch:04d}.pt'
-COSSIM_PREDICTOR_PATH_PAT = 'models/structural_omega_grapn_sage_cossim/link_predictor_{run}run_{n_layers_graph_sage}gslayers_epoch{epoch:04d}.pt'
-COSSIM_METRICS_PATH = 'data/metrics/structural_omega_grapn_sage_cossim_{n_layers_graph_sage}gslayers.csv'
+DOTMLP_MODEL_PATH_PAT = 'models/structural_omega_grapn_sage_dotmlp/{dataset}/model_{run}run_{n_layers_graph_sage}gslayers_{n_layers_mlp}mlplayers_epoch{epoch:04d}.pt'
+DOTMLP_PREDICTOR_PATH_PAT = 'models/structural_omega_grapn_sage_dotmlp/{dataset}/link_predictor_{run}run_{n_layers_graph_sage}gslayers_{n_layers_mlp}mlplayers_epoch{epoch:04d}.pt'
+DOTMLP_METRICS_PATH = 'data/metrics/{dataset}/structural_omega_grapn_sage_dotmlp_{n_layers_graph_sage}gslayers_{n_layers_mlp}mlplayers.csv'
+COSSIM_MODEL_PATH_PAT = 'models/structural_omega_grapn_sage_cossim/{dataset}/model_{run}run_{n_layers_graph_sage}gslayers_epoch{epoch:04d}.pt'
+COSSIM_PREDICTOR_PATH_PAT = 'models/structural_omega_grapn_sage_cossim/{dataset}/link_predictor_{run}run_{n_layers_graph_sage}gslayers_epoch{epoch:04d}.pt'
+COSSIM_METRICS_PATH = 'data/metrics/{dataset}/structural_omega_grapn_sage_cossim_{n_layers_graph_sage}gslayers.csv'
 METRICS_COLS = [
     'run',
     'epoch',
@@ -35,12 +35,14 @@ class StructuralOmegaGraphSageDotMLP():
     def __init__(
             self,
             device,
+            dataset,
             eval_steps=100,
             n_layers_graph_sage=1,
             n_layers_mlp=1,
             epochs=5000,
             batch_size=128 * 1024,
             run=0):
+        self.dataset = dataset
         self.n_layers_graph_sage = n_layers_graph_sage
         self.n_layers_mlp = n_layers_mlp
         self.initialize_models_data(device)
@@ -416,6 +418,7 @@ class StructuralOmegaGraphSageCosSim():
     def save_models(self, epoch):
 
         model_path = self.model_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             n_layers_graph_sage=self.n_layers_graph_sage,
             epoch=epoch)
@@ -424,6 +427,7 @@ class StructuralOmegaGraphSageCosSim():
             os.makedirs(model_folder)
 
         predictor_path = self.predictor_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             n_layers_graph_sage=self.n_layers_graph_sage,
             epoch=epoch)
@@ -445,6 +449,7 @@ class StructuralOmegaGraphSageCosSim():
             auc_test):
 
         metrics_path = self.model_metrics_path.format(
+            dataset=self.dataset,
             n_layers_graph_sage=self.n_layers_graph_sage,
         )
         metrics_folder = metrics_path.rsplit('/', 1)[0]
@@ -530,8 +535,9 @@ class StructuralOmegaGraphSageCosSim():
                     auc_test)
 
     @staticmethod
-    def read_metrics(n_layers_graph_sage=1, n_layers_mlp=1):
+    def read_metrics(dataset, n_layers_graph_sage=1, n_layers_mlp=1):
         metrics_path = COSSIM_METRICS_PATH.format(
+            dataset=dataset,
             n_layers_graph_sage=n_layers_graph_sage)
         return pd.read_csv(metrics_path)
 
@@ -556,6 +562,7 @@ class StructuralOmegaGraphSageCosSim():
             batch_size=batch_size)
 
         model_path = omega.model_path_pat.format(
+            dataset=omega.dataset,
             run=omega.run,
             n_layers_graph_sage=omega.n_layers_graph_sage,
             epoch=epoch)
@@ -569,6 +576,7 @@ class StructuralOmegaGraphSageCosSim():
         model.eval()
 
         predictor_path = omega.predictor_path_pat.format(
+            dataset=omega.dataset,
             run=omega.run,
             n_layers_graph_sage=omega.n_layers_graph_sage,
             epoch=epoch)
