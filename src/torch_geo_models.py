@@ -205,17 +205,21 @@ class EdgeWeigher(torch.nn.Module):
         super(EdgeWeigher, self).__init__()
 
         self.base_weights = base_weights
-        self.lin = torch.nn.Linear(1, 1, bias=bias)
+        self.lin = Parameter(torch.tensor(1., dtype=torch.float32))
+        self.bias = Parameter(torch.tensor(0., dtype=torch.float32))
 
     def reset_parameters(self):
-        self.lin.weight.data.fill_(1)
-        self.lin.bias.data.fill_(0)
+        self.lin.data.fill_(1.)
+        self.bias.data.fill_(0.)
 
     def forward(self):
         edge_weights = self.base_weights.copy()
-        edge_weights_values = edge_weights.storage.value().reshape(-1, 1)
-        edge_weights_values = self.lin(edge_weights_values)
-        edge_weights_values = torch.sigmoid(edge_weights_values).squeeze()
+        edge_weights_values = torch.add(
+            torch.mul(
+                edge_weights.storage.value(),
+                self.lin),
+            self.bias)
+        edge_weights_values = torch.sigmoid(edge_weights_values)
         edge_weights.set_value_(edge_weights_values, layout='coo')
 
         return edge_weights
