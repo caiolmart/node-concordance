@@ -13,10 +13,10 @@ from src.torch_geo_models import GraphSAGE, LinkPredictor
 HIDDEN_CHANNELS = 50
 DROPOUT = 0.5
 LEARNING_RATIO = 0.005
-MODEL_PATH_PAT = 'models/positional_omega_graph_sage_cossim/graph_sage/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
-PREDICTOR_PATH_PAT = 'models/positional_omega_graph_sage_cossim/link_predictor/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
-EMBEDDING_PATH_PAT = 'models/positional_omega_graph_sage_cossim/embedding/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
-METRICS_PATH = 'data/metrics/positional_omega_graph_sage_cossim_{n_layers}layers.csv'
+MODEL_PATH_PAT = 'models/positional_omega_graph_sage_cossim/{dataset}/graph_sage/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+PREDICTOR_PATH_PAT = 'models/positional_omega_graph_sage_cossim/{dataset}/link_predictor/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+EMBEDDING_PATH_PAT = 'models/positional_omega_graph_sage_cossim/{dataset}/embedding/{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+METRICS_PATH = 'data/metrics/{dataset}/positional_omega_graph_sage_cossim_{n_layers}layers.csv'
 METRICS_COLS = [
     'n_layers',
     'run',
@@ -35,12 +35,14 @@ class PositionalOmegaGraphSageCosSim():
     def __init__(
             self,
             device,
+            dataset,
             num_nodes,
             eval_steps=1,
             n_layers=1,
             epochs=200,
             batch_size=512 * 1024,
             run=0):
+        self.dataset = dataset
         self.n_layers = n_layers
         self.initialize_models_data(device, num_nodes)
         self.eval_steps = eval_steps
@@ -198,6 +200,7 @@ class PositionalOmegaGraphSageCosSim():
     def save_models(self, epoch):
 
         model_path = self.model_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             n_layers=self.n_layers,
             epoch=epoch)
@@ -206,6 +209,7 @@ class PositionalOmegaGraphSageCosSim():
             os.makedirs(model_folder)
 
         predictor_path = self.predictor_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             n_layers=self.n_layers,
             epoch=epoch)
@@ -214,6 +218,7 @@ class PositionalOmegaGraphSageCosSim():
             os.makedirs(predictor_folder)
 
         embedding_path = self.embedding_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             n_layers=self.n_layers,
             epoch=epoch)
@@ -347,14 +352,17 @@ class PositionalOmegaGraphSageCosSim():
 
         for _, row in not_optimal_df.iterrows():
             model_path = self.model_path_pat.format(
+                dataset=self.dataset,
                 run=row['run'],
                 n_layers=row['n_layers'],
                 epoch=row['epoch'])
             predictor_path = self.predictor_path_pat.format(
+                dataset=self.dataset,
                 run=row['run'],
                 n_layers=row['n_layers'],
                 epoch=row['epoch'])
             embedding_path = self.embedding_path_pat.format(
+                dataset=self.dataset,
                 run=row['run'],
                 n_layers=row['n_layers'],
                 epoch=row['epoch'])
@@ -414,6 +422,7 @@ class PositionalOmegaGraphSageCosSim():
         model.eval()
 
         predictor_path = gamma.predictor_path_pat.format(
+            dataset=gamma.dataset,
             run=gamma.run,
             n_layers=gamma.n_layers,
             epoch=epoch)
@@ -423,6 +432,7 @@ class PositionalOmegaGraphSageCosSim():
         predictor.eval()
 
         embedding_path = gamma.embedding_path_pat.format(
+            dataset=gamma.dataset,
             run=gamma.run,
             n_layers=gamma.n_layers,
             epoch=epoch)
