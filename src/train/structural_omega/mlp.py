@@ -13,7 +13,7 @@ IN_CHANNELS = 128
 DROPOUT = 0.5
 LEARNING_RATIO = 0.005
 PREDICTOR_PATH_PAT = 'models/structural_omega_mlp/link_predictor_{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
-METRICS_PATH = 'data/metrics/structural_omega_mlp_{n_layers}layers.csv'
+METRICS_PATH = 'data/metrics/ogbn-arxiv/structural_omega_mlp_{n_layers}layers.csv'
 METRICS_COLS = [
     'run',
     'epoch',

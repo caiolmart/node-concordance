@@ -16,7 +16,7 @@ DROPOUT = 0.5
 LEARNING_RATIO = 0.01
 PREDICTOR_PATH_PAT = 'models/positional_omega_node2vec/link_predictor/{run}run_{p}p_{q}q_epoch{epoch:04d}.pt'
 EMBEDDING_PATH_PAT = 'models/positional_omega_node2vec/embedding/{run}run_{p}p_{q}q_epoch{epoch:04d}.pt'
-METRICS_PATH = 'data/metrics/positional_omega_node2vec_{p}p_{q}q.csv'
+METRICS_PATH = 'data/metrics/{dataset}/positional_omega_node2vec_{p}p_{q}q.csv'
 METRICS_COLS = [
     'p',
     'q',
@@ -327,8 +327,9 @@ class PositionalOmegaNode2Vec():
                     auc_test=auc_test)
 
     @classmethod
-    def read_metrics(self, p, q):
+    def read_metrics(self, dataset, p, q):
         metrics_path = METRICS_PATH.format(
+            dataset=dataset,
             p=p,
             q=q)
         return pd.read_csv(metrics_path)

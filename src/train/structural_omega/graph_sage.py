@@ -313,11 +313,13 @@ class StructuralOmegaGraphSageCosSim():
     def __init__(
             self,
             device,
+            dataset,
             eval_steps=100,
             n_layers_graph_sage=1,
             epochs=5000,
             batch_size=128 * 1024,
             run=0):
+        self.dataset = dataset
         self.n_layers_graph_sage = n_layers_graph_sage
         self.initialize_models_data(device)
         self.eval_steps = eval_steps

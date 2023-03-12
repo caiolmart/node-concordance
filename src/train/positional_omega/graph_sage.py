@@ -340,8 +340,8 @@ class PositionalOmegaGraphSageCosSim():
                     auc_test)
 
     @classmethod
-    def read_metrics(self, n_layers=1):
-        metrics_path = METRICS_PATH.format(n_layers=n_layers)
+    def read_metrics(self, dataset, n_layers=1):
+        metrics_path = METRICS_PATH.format(dataset=dataset, n_layers=n_layers)
         return pd.read_csv(metrics_path)
 
     def discard_run_not_optimal_models(self):
