@@ -29,27 +29,32 @@ METRICS_COLS = [
 class StructuralOmegaMLP():
 
     def __init__(
-            self,
-            device,
-            eval_steps=100,
-            n_layers=1,
-            epochs=5000,
-            batch_size=128 * 1024,
-            run=0):
+        self,
+        device,
+        eval_steps=100,
+        n_layers=1,
+        epochs=5000,
+        batch_size=128 * 1024,
+        run=0,
+        in_channels=IN_CHANNELS
+    ):
+        self.device = device
         self.n_layers = n_layers
-        self.initialize_models_data(device)
         self.eval_steps = eval_steps
         self.epochs = epochs
         self.batch_size = batch_size
         self.predictor_path_pat = PREDICTOR_PATH_PAT
         self.model_metrics_path = METRICS_PATH
+        self.in_channels = in_channels
         self.run = run
+        self.initialize_models_data(device)
         self.loss = torch.nn.BCELoss(reduction='mean')
 
     def initialize_models_data(self, device):
 
         self.predictor = DotMLPRelu(
-            self.n_layers, IN_CHANNELS, HIDDEN_CHANNELS, DROPOUT).to(device)
+            self.n_layers, self.in_channels, HIDDEN_CHANNELS, DROPOUT
+        ).to(device)
         self.predictor.reset_parameters()
 
         self.optimizer = torch.optim.Adam(
@@ -64,11 +69,13 @@ class StructuralOmegaMLP():
         for perm in DataLoader(edges_train,
                                batch_size,
                                shuffle=True):
-
             self.optimizer.zero_grad()
             theta_perm = self.is_same_class(perm, y).to(torch.float32)
 
-            predicted = self.predictor(x[perm[0]], x[perm[1]])
+            predicted = self.predictor(
+                x[perm[0]].to(self.device),
+                x[perm[1]].to(self.device)
+            )
 
             perm_loss = self.loss(predicted, theta_perm)
 
@@ -88,8 +95,15 @@ class StructuralOmegaMLP():
         probas = []
         for batch in DataLoader(edges,
                                 self.batch_size,
-                                shuffle=False):
-            batch_probas = self.predictor(x[batch[0]], x[batch[1]])
+                                shuffle=False,
+                                num_workers=1):
+            torch.cuda.empty_cache()
+            features0 = x[batch[0]]
+            features1 = x[batch[1]]
+            batch_probas = self.predictor(
+                features0,
+                features1
+            )
             probas.append(batch_probas)
         return torch.concat(probas)
 
@@ -109,9 +123,11 @@ class StructuralOmegaMLP():
         aucs = []
 
         # Loss evaluation
-        for edges in [edges_train, edges_val, edges_test]:
+        for idx, edges in enumerate([edges_train, edges_val, edges_test]):
             proba = self.forward(edges, x)
-            theta = self.is_same_class(edges, y).to(torch.float32)
+            theta = self.is_same_class(edges, y).to(
+                torch.float32
+            ).to(self.device)
 
             loss = self.loss(proba, theta)
             losses.append(loss.item())
