@@ -240,7 +240,10 @@ class PositionalOmegaGraphSageCosSim():
             auc_val,
             auc_test):
 
-        metrics_path = self.model_metrics_path.format(n_layers=self.n_layers)
+        metrics_path = self.model_metrics_path.format(
+            dataset=self.dataset,
+            n_layers=self.n_layers
+        )
         metrics_folder = metrics_path.rsplit('/', 1)[0]
         if not os.path.exists(metrics_folder):
             os.makedirs(metrics_folder)
@@ -345,7 +348,10 @@ class PositionalOmegaGraphSageCosSim():
         return pd.read_csv(metrics_path)
 
     def discard_run_not_optimal_models(self):
-        not_optimal_df = self.read_metrics(self.n_layers)\
+        not_optimal_df = self.read_metrics(
+            dataset=self.dataset,
+            n_layers=self.n_layers
+        )\
             .query(f'run == {self.run} & epoch != 0')\
             .sort_values('auc_val')\
             .iloc[:-1]
@@ -385,13 +391,13 @@ class PositionalOmegaGraphSageCosSim():
             except:
                 logging.info('%s does not exists', embedding_path)
 
-
     @classmethod
     def load_model(
         self,
         run,
         epoch,
         device,
+        dataset,
         num_nodes,
         eval_steps=1,
         n_layers=1,
@@ -400,8 +406,9 @@ class PositionalOmegaGraphSageCosSim():
     ):
 
         gamma = PositionalOmegaGraphSageCosSim(
-            device,
-            num_nodes,
+            device=device,
+            num_nodes=num_nodes,
+            dataset=dataset,
             run=run,
             eval_steps=eval_steps,
             n_layers=n_layers,
@@ -410,6 +417,7 @@ class PositionalOmegaGraphSageCosSim():
 
         model_path = gamma.model_path_pat.format(
             run=gamma.run,
+            dataset=gamma.dataset,
             n_layers=gamma.n_layers,
             epoch=epoch)
 
