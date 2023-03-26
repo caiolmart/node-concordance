@@ -14,8 +14,8 @@ CONTEXT_SIZE = 10
 WALKS_PER_NODE = 1
 DROPOUT = 0.5
 LEARNING_RATIO = 0.01
-PREDICTOR_PATH_PAT = 'models/positional_omega_node2vec/link_predictor/{run}run_{p}p_{q}q_epoch{epoch:04d}.pt'
-EMBEDDING_PATH_PAT = 'models/positional_omega_node2vec/embedding/{run}run_{p}p_{q}q_epoch{epoch:04d}.pt'
+PREDICTOR_PATH_PAT = 'models/positional_omega_node2vec/{dataset}/link_predictor/{run}run_{p}p_{q}q_epoch{epoch:04d}.pt'
+EMBEDDING_PATH_PAT = 'models/positional_omega_node2vec/{dataset}/embedding/{run}run_{p}p_{q}q_epoch{epoch:04d}.pt'
 METRICS_PATH = 'data/metrics/{dataset}/positional_omega_node2vec_{p}p_{q}q.csv'
 METRICS_COLS = [
     'p',
@@ -37,6 +37,7 @@ class PositionalOmegaNode2Vec():
     def __init__(
             self,
             device,
+            dataset,
             edge_index,
             num_nodes,
             p,
@@ -46,6 +47,7 @@ class PositionalOmegaNode2Vec():
             batch_size=8 * 1024,
             run=0):
         self.device = device
+        self.dataset = dataset
         self.p = p
         self.q = q
         self.batch_size = batch_size
@@ -191,6 +193,7 @@ class PositionalOmegaNode2Vec():
     def save_models(self, epoch):
 
         predictor_path = self.predictor_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             p=self.p,
             q=self.q,
@@ -200,6 +203,7 @@ class PositionalOmegaNode2Vec():
             os.makedirs(predictor_folder)
 
         embedding_path = self.embedding_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             p=self.p,
             q=self.q,
@@ -223,6 +227,7 @@ class PositionalOmegaNode2Vec():
             auc_test):
 
         metrics_path = self.model_metrics_path.format(
+            dataset=self.dataset,
             p=self.p,
             q=self.q,
             epoch=epoch)
@@ -335,18 +340,24 @@ class PositionalOmegaNode2Vec():
         return pd.read_csv(metrics_path)
 
     def discard_run_not_optimal_models(self):
-        not_optimal_df = self.read_metrics(self.p, self.q)\
+        not_optimal_df = self.read_metrics(
+            dataset=self.dataset,
+            p=self.p,
+            q=self.q
+        )\
             .query(f'run == {self.run} & epoch != 0')\
             .sort_values('auc_val')\
             .iloc[:-1]
 
         for _, row in not_optimal_df.iterrows():
             predictor_path = self.predictor_path_pat.format(
+                dataset=self.dataset,
                 run=row['run'],
                 p=row['p'],
                 q=row['q'],
                 epoch=row['epoch'])
             embedding_path = self.embedding_path_pat.format(
+                dataset=self.dataset,
                 run=row['run'],
                 p=row['p'],
                 q=row['q'],
@@ -364,11 +375,11 @@ class PositionalOmegaNode2Vec():
             except:
                 logging.info('%s does not exists', embedding_path)
 
-
     @classmethod
     def load_model(
         self,
         run,
+        dataset,
         edge_index,
         num_nodes,
         p,
@@ -382,6 +393,7 @@ class PositionalOmegaNode2Vec():
 
         omega = PositionalOmegaNode2Vec(
             device,
+            dataset,
             num_nodes,
             edge_index,
             num_nodes,
@@ -393,6 +405,7 @@ class PositionalOmegaNode2Vec():
             batch_size=batch_size)
 
         model_path = omega.model_path_pat.format(
+            dataset=dataset,
             run=run,
             p=p,
             q=q,
@@ -412,6 +425,7 @@ class PositionalOmegaNode2Vec():
         model.eval()
 
         predictor_path = omega.predictor_path_pat.format(
+            dataset=dataset,
             run=omega.run,
             p=omega.p,
             q=omega.q,
