@@ -12,8 +12,8 @@ HIDDEN_CHANNELS = 128
 IN_CHANNELS = 128
 DROPOUT = 0.5
 LEARNING_RATIO = 0.005
-PREDICTOR_PATH_PAT = 'models/structural_omega_mlp/link_predictor_{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
-METRICS_PATH = 'data/metrics/ogbn-arxiv/structural_omega_mlp_{n_layers}layers.csv'
+PREDICTOR_PATH_PAT = 'models/structural_omega_mlp/{dataset}/link_predictor_{run}run_{n_layers}layers_epoch{epoch:04d}.pt'
+METRICS_PATH_PAT = 'data/metrics/{dataset}/structural_omega_mlp_{n_layers}layers.csv'
 METRICS_COLS = [
     'run',
     'epoch',
@@ -31,25 +31,30 @@ class StructuralOmegaMLP():
     def __init__(
             self,
             device,
+            dataset,
             eval_steps=100,
             n_layers=1,
             epochs=5000,
             batch_size=128 * 1024,
+            in_channels=IN_CHANNELS,
             run=0):
+        self.dataset = dataset
         self.n_layers = n_layers
+        self.in_channels = in_channels
         self.initialize_models_data(device)
         self.eval_steps = eval_steps
         self.epochs = epochs
         self.batch_size = batch_size
         self.predictor_path_pat = PREDICTOR_PATH_PAT
-        self.model_metrics_path = METRICS_PATH
+        self.model_metrics_path_pat = METRICS_PATH_PAT
         self.run = run
         self.loss = torch.nn.BCELoss(reduction='mean')
 
     def initialize_models_data(self, device):
 
         self.predictor = DotMLPRelu(
-            self.n_layers, IN_CHANNELS, HIDDEN_CHANNELS, DROPOUT).to(device)
+            self.n_layers, self.in_channels, HIDDEN_CHANNELS, DROPOUT
+        ).to(device)
         self.predictor.reset_parameters()
 
         self.optimizer = torch.optim.Adam(
@@ -126,6 +131,7 @@ class StructuralOmegaMLP():
     def save_models(self, epoch):
 
         predictor_path = self.predictor_path_pat.format(
+            dataset=self.dataset,
             run=self.run,
             n_layers=self.n_layers,
             epoch=epoch)
@@ -145,7 +151,9 @@ class StructuralOmegaMLP():
             auc_val,
             auc_test):
 
-        metrics_path = self.model_metrics_path.format(n_layers=self.n_layers)
+        metrics_path = self.model_metrics_path_pat.format(
+            n_layers=self.n_layers, dataset=self.dataset
+        )
         metrics_folder = metrics_path.rsplit('/', 1)[0]
         if not os.path.exists(metrics_folder):
             os.makedirs(metrics_folder)
@@ -226,13 +234,14 @@ class StructuralOmegaMLP():
                     auc_test)
 
     @staticmethod
-    def read_metrics(n_layers=1):
-        metrics_path = METRICS_PATH.format(n_layers=n_layers)
+    def read_metrics(dataset, n_layers=1):
+        metrics_path = METRICS_PATH_PAT.format(dataset=dataset, n_layers=n_layers)
         return pd.read_csv(metrics_path)
 
     @classmethod
     def load_model(
         cls,
+        dataset,
         run,
         epoch,
         device,
@@ -253,6 +262,7 @@ class StructuralOmegaMLP():
             batch_size=batch_size)
 
         predictor_path = omega.predictor_path_pat.format(
+            dataset=dataset,
             run=omega.run,
             n_layers=omega.n_layers,
             epoch=epoch)
