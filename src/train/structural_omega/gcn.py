@@ -11,10 +11,10 @@ HIDDEN_CHANNELS = 128
 IN_CHANNELS = 128
 DROPOUT = 0.5
 LEARNING_RATIO = 0.005
-COSSIM_MODEL_PATH_PAT = "models/structural_omega_gcn_cossim/model_{run}run_{n_layers_gcn}gslayers_epoch{epoch:04d}.pt"
-COSSIM_PREDICTOR_PATH_PAT = "models/structural_omega_gcn_cossim/link_predictor_{run}run_{n_layers_gcn}gslayers_epoch{epoch:04d}.pt"
+COSSIM_MODEL_PATH_PAT = "models/structural_omega_gcn_cossim/{dataset}/model_{run}run_{n_layers_gcn}gslayers_epoch{epoch:04d}.pt"
+COSSIM_PREDICTOR_PATH_PAT = "models/structural_omega_gcn_cossim/{dataset}/link_predictor_{run}run_{n_layers_gcn}gslayers_epoch{epoch:04d}.pt"
 COSSIM_METRICS_PATH = (
-    "data/metrics/structural_omega_gcn_cossim_{n_layers_gcn}gslayers.csv"
+    "data/metrics/{dataset}structural_omega_gcn_cossim_{n_layers_gcn}gslayers.csv"
 )
 METRICS_COLS = [
     "run",
@@ -32,6 +32,8 @@ class StructuralOmegaGCNCosSim:
     def __init__(
         self,
         device,
+        dataset,
+        in_channels=IN_CHANNELS,
         eval_steps=50,
         n_layers_gcn=1,
         epochs=2000,
@@ -39,6 +41,8 @@ class StructuralOmegaGCNCosSim:
         run=0,
     ):
         self.n_layers_gcn = n_layers_gcn
+        self.dataset = dataset
+        self.in_channels = in_channels
         self.initialize_models_data(device)
         self.eval_steps = eval_steps
         self.epochs = epochs
@@ -52,7 +56,7 @@ class StructuralOmegaGCNCosSim:
     def initialize_models_data(self, device):
         self.model = GCN(
             self.n_layers_gcn,
-            IN_CHANNELS,
+            self.in_channels,
             HIDDEN_CHANNELS,
             HIDDEN_CHANNELS,
             DROPOUT,
@@ -130,14 +134,20 @@ class StructuralOmegaGCNCosSim:
     def save_models(self, epoch):
 
         model_path = self.model_path_pat.format(
-            run=self.run, n_layers_gcn=self.n_layers_gcn, epoch=epoch
+            dataset=self.dataset,
+            run=self.run,
+            n_layers_gcn=self.n_layers_gcn,
+            epoch=epoch
         )
         model_folder = model_path.rsplit("/", 1)[0]
         if not os.path.exists(model_folder):
             os.makedirs(model_folder)
 
         predictor_path = self.predictor_path_pat.format(
-            run=self.run, n_layers_gcn=self.n_layers_gcn, epoch=epoch
+            dataset=self.dataset,
+            run=self.run,
+            n_layers_gcn=self.n_layers_gcn,
+            epoch=epoch
         )
         predictor_folder = predictor_path.rsplit("/", 1)[0]
         if not os.path.exists(predictor_folder):
@@ -151,6 +161,7 @@ class StructuralOmegaGCNCosSim:
     ):
 
         metrics_path = self.model_metrics_path.format(
+            dataset=self.dataset,
             n_layers_gcn=self.n_layers_gcn,
         )
         metrics_folder = metrics_path.rsplit("/", 1)[0]
@@ -217,8 +228,9 @@ class StructuralOmegaGCNCosSim:
                 )
 
     @staticmethod
-    def read_metrics(n_layers_gcn=1, n_layers_mlp=1):
+    def read_metrics(dataset, n_layers_gcn=1, n_layers_mlp=1):
         metrics_path = COSSIM_METRICS_PATH.format(
+            dataset=dataset,
             n_layers_gcn=n_layers_gcn
         )
         return pd.read_csv(metrics_path)
@@ -226,6 +238,7 @@ class StructuralOmegaGCNCosSim:
     @classmethod
     def load_model(
         cls,
+        dataset,
         run,
         epoch,
         device,
@@ -245,7 +258,10 @@ class StructuralOmegaGCNCosSim:
         )
 
         model_path = omega.model_path_pat.format(
-            run=omega.run, n_layers_gcn=omega.n_layers_gcn, epoch=epoch
+            dataset=dataset,
+            run=omega.run,
+            n_layers_gcn=omega.n_layers_gcn,
+            epoch=epoch
         )
 
         model = GCN(
@@ -259,7 +275,10 @@ class StructuralOmegaGCNCosSim:
         model.eval()
 
         predictor_path = omega.predictor_path_pat.format(
-            run=omega.run, n_layers_gcn=omega.n_layers_gcn, epoch=epoch
+            dataset=dataset,
+            run=omega.run,
+            n_layers_gcn=omega.n_layers_gcn,
+            epoch=epoch
         )
 
         predictor = LinkPredictor().to(device)
