@@ -314,6 +314,7 @@ class StructuralOmegaGraphSageCosSim():
             self,
             device,
             dataset,
+            in_channels=IN_CHANNELS,
             eval_steps=100,
             n_layers_graph_sage=1,
             epochs=5000,
@@ -321,6 +322,7 @@ class StructuralOmegaGraphSageCosSim():
             run=0):
         self.dataset = dataset
         self.n_layers_graph_sage = n_layers_graph_sage
+        self.in_channels = in_channels
         self.initialize_models_data(device)
         self.eval_steps = eval_steps
         self.epochs = epochs
@@ -333,7 +335,7 @@ class StructuralOmegaGraphSageCosSim():
 
     def initialize_models_data(self, device):
         self.model = GraphSAGE(self.n_layers_graph_sage,
-                               IN_CHANNELS,
+                               self.in_channels,
                                HIDDEN_CHANNELS,
                                DROPOUT).to(device)
         self.model.reset_parameters()
