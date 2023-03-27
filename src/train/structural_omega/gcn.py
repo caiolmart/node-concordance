@@ -14,7 +14,7 @@ LEARNING_RATIO = 0.005
 COSSIM_MODEL_PATH_PAT = "models/structural_omega_gcn_cossim/{dataset}/model_{run}run_{n_layers_gcn}gslayers_epoch{epoch:04d}.pt"
 COSSIM_PREDICTOR_PATH_PAT = "models/structural_omega_gcn_cossim/{dataset}/link_predictor_{run}run_{n_layers_gcn}gslayers_epoch{epoch:04d}.pt"
 COSSIM_METRICS_PATH = (
-    "data/metrics/{dataset}structural_omega_gcn_cossim_{n_layers_gcn}gslayers.csv"
+    "data/metrics/{dataset}/structural_omega_gcn_cossim_{n_layers_gcn}layers.csv"
 )
 METRICS_COLS = [
     "run",
