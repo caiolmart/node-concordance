@@ -235,7 +235,8 @@ class StructuralOmegaMLP():
 
     @staticmethod
     def read_metrics(dataset, n_layers=1):
-        metrics_path = METRICS_PATH_PAT.format(dataset=dataset, n_layers=n_layers)
+        metrics_path = METRICS_PATH_PAT.format(
+            dataset=dataset, n_layers=n_layers)
         return pd.read_csv(metrics_path)
 
     @classmethod
@@ -249,7 +250,8 @@ class StructuralOmegaMLP():
         eval_steps=100,
         n_layers=1,
         epochs=5000,
-        batch_size=128 * 1024
+        batch_size=128 * 1024,
+        in_channels=IN_CHANNELS,
     ):
 
         omega = cls(
@@ -267,7 +269,12 @@ class StructuralOmegaMLP():
             n_layers=omega.n_layers,
             epoch=epoch)
 
-        predictor = DotMLPRelu().to(device)
+        predictor = DotMLPRelu(
+            n_layers=n_layers,
+            in_channels=in_channels,
+            hidden_channels=HIDDEN_CHANNELS,
+            dropout=DROPOUT,
+        ).to(device)
         predictor.load_state_dict(torch.load(predictor_path))
         predictor.eval()
 
