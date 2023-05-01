@@ -377,7 +377,7 @@ class PositionalOmegaNode2Vec():
 
     @classmethod
     def load_model(
-        self,
+        cls,
         run,
         dataset,
         edge_index,
@@ -391,20 +391,19 @@ class PositionalOmegaNode2Vec():
         batch_size=128 * 1024
     ):
 
-        omega = PositionalOmegaNode2Vec(
-            device,
-            dataset,
-            num_nodes,
-            edge_index,
-            num_nodes,
-            p,
-            q,
+        omega = cls(
+            device=device,
+            dataset=dataset,
+            edge_index=edge_index,
+            num_nodes=num_nodes,
+            p=p,
+            q=q,
             run=run,
             eval_steps=eval_steps,
             epochs=epochs,
             batch_size=batch_size)
 
-        model_path = omega.model_path_pat.format(
+        embedding_path = omega.embedding_path_pat.format(
             dataset=dataset,
             run=run,
             p=p,
@@ -417,12 +416,14 @@ class PositionalOmegaNode2Vec():
             WALK_LENGTH,
             CONTEXT_SIZE,
             walks_per_node=WALKS_PER_NODE,
-            p=self.p,
-            q=self.q,
+            p=omega.p,
+            q=omega.q,
             num_negative_samples=WALKS_PER_NODE,
             num_nodes=num_nodes).to(device)
-        model.load_state_dict(torch.load(model_path))
-        model.eval()
+
+        model.load_state_dict(torch.load(embedding_path))
+        model.embedding.eval()
+        omega.model = model
 
         predictor_path = omega.predictor_path_pat.format(
             dataset=dataset,
@@ -434,5 +435,6 @@ class PositionalOmegaNode2Vec():
         predictor = LinkPredictor().to(device)
         predictor.load_state_dict(torch.load(predictor_path))
         predictor.eval()
+        omega.predictor = predictor
 
         return omega
