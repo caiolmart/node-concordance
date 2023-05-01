@@ -548,6 +548,7 @@ class StructuralOmegaGraphSageCosSim():
     @classmethod
     def load_model(
         cls,
+        dataset,
         run,
         epoch,
         device,
@@ -559,6 +560,7 @@ class StructuralOmegaGraphSageCosSim():
 
         omega = cls(
             device,
+            dataset=dataset,
             run=run,
             eval_steps=eval_steps,
             n_layers_graph_sage=n_layers_graph_sage,
