@@ -249,7 +249,8 @@ class StructuralOmegaGCNCosSim:
     ):
 
         omega = cls(
-            device,
+            device=device,
+            dataset=dataset,
             run=run,
             eval_steps=eval_steps,
             n_layers_gcn=n_layers_gcn,
