@@ -23,6 +23,7 @@ torch-spline-conv = {version = "^1.2.1", source = "torchgeo-cu116"}
 torch-geometric = "^2.1.0.post1"
 ogb = "^1.3.5"
 dgl = "^0.9.1"
+pyarrow = "^12.0.0"
 
 [tool.poetry.dev-dependencies]
 
@@ -52,6 +53,7 @@ secondary = true
 ipykernel = "^6.17.1"
 autopep8 = "^2.0.0"
 notebook = "^6.5.2"
+ipywidgets = "^8.0.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
